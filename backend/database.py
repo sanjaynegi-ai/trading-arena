@@ -54,6 +54,14 @@ def _init_db() -> None:
 
 
 def write_account(name: str, account_dict: dict[str, Any]) -> None:
+    """Create or replace the stored JSON snapshot for one account.
+
+    The account name is normalized to lowercase before writing, so callers can
+    use user-facing names without worrying about case-sensitive duplicates. The
+    dictionary should already be JSON-compatible, such as the output of a
+    Pydantic model's `model_dump(mode="json")`.
+    """
+
     normalized_name = _normalize_name(name)
     account_json = json.dumps(account_dict, sort_keys=True)
 
@@ -69,6 +77,13 @@ def write_account(name: str, account_dict: dict[str, Any]) -> None:
 
 
 def read_account(name: str) -> dict[str, Any] | None:
+    """Read one account snapshot from SQLite by lowercase-normalized name.
+
+    Returns the decoded JSON dictionary when an account exists, or `None` when
+    no account has been stored for that name. This function does not validate
+    the account shape; model validation is handled by `backend.accounts.Account`.
+    """
+
     normalized_name = _normalize_name(name)
 
     with _connect() as conn:
@@ -83,6 +98,15 @@ def read_account(name: str) -> dict[str, Any] | None:
 
 
 def write_log(name: str, type: str, message: str) -> None:
+    """Append a timestamped activity log entry for an account.
+
+    Logs are stored separately from account snapshots so reads, buys, sells, and
+    other events can be inspected without changing the account JSON structure.
+    Names are normalized to lowercase, timestamps are recorded in UTC ISO 8601
+    format, and the `type` value is a short category such as `buy`, `sell`, or
+    `report`.
+    """
+
     normalized_name = _normalize_name(name)
     timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -97,6 +121,14 @@ def write_log(name: str, type: str, message: str) -> None:
 
 
 def read_log(name: str, last_n: int = 10) -> list[dict[str, Any]]:
+    """Return the most recent log entries for an account.
+
+    The account name is normalized to lowercase and up to `last_n` rows are
+    returned. Results are ordered oldest-to-newest within the requested recent
+    window so callers can display them chronologically. Passing a value below
+    one returns an empty list.
+    """
+
     normalized_name = _normalize_name(name)
     if last_n < 1:
         return []

@@ -53,7 +53,14 @@ def _price_from_recent_history(ticker: yf.Ticker) -> float | None:
 
 
 def get_share_price(symbol: str) -> float:
-    """Return the latest available share price for a ticker symbol."""
+    """Return the latest available Yahoo Finance price for a ticker symbol.
+
+    The symbol is normalized to uppercase before lookup. The function first
+    tries `Ticker.fast_info` because it is usually the quickest source for a
+    recent price, then falls back to the latest close from recent historical
+    daily data. It returns a positive float and raises `ValueError` if the
+    symbol is empty or Yahoo Finance cannot provide a usable price.
+    """
 
     normalized_symbol = _normalize_symbol(symbol)
     ticker = yf.Ticker(normalized_symbol)

@@ -17,6 +17,15 @@ SPREAD = 0.002
 
 
 class Transaction(BaseModel):
+    """A single executed trade stored inside an account.
+
+    Transactions capture the immutable details of an action that changed
+    holdings: the ticker symbol, number of shares, execution price after spread,
+    trade type, human/agent rationale, and UTC timestamp. Account methods append
+    these records when shares are bought or sold so later reports can explain how
+    the account reached its current state.
+    """
+
     symbol: str
     quantity: float
     price: float
@@ -28,6 +37,19 @@ class Transaction(BaseModel):
 
 
 class Account(BaseModel):
+    """Persistent trading account state for one arena participant.
+
+    The account model owns cash balance, strategy text, current share holdings,
+    executed transactions, and a time series of portfolio values. It is a
+    Pydantic model so it can be validated from dictionaries read from SQLite and
+    serialized back to JSON-compatible data when saved.
+
+    Methods on this class intentionally combine domain state changes with
+    persistence: when an operation mutates the account, it saves the updated
+    model through `backend.database.write_account`. Trading methods also write
+    account logs so the dashboard or API can show recent activity.
+    """
+
     name: str
     balance: float = INITIAL_BALANCE
     strategy: str = ""
@@ -37,6 +59,15 @@ class Account(BaseModel):
 
     @classmethod
     def get(cls, name: str) -> "Account":
+        """Load an account by name, creating a clean account if needed.
+
+        Names are normalized to lowercase before storage lookup. If the account
+        already exists in SQLite, its JSON payload is validated into an
+        `Account`. If no row exists, a new account starts with
+        `INITIAL_BALANCE`, empty strategy, empty holdings, no transactions, and
+        no portfolio value history, then is immediately saved.
+        """
+
         normalized_name = _normalize_name(name)
         account_data = read_account(normalized_name)
 
@@ -55,10 +86,26 @@ class Account(BaseModel):
         return account
 
     def save(self) -> None:
+        """Persist the current account snapshot to SQLite.
+
+        This writes the full JSON-compatible account model under the lowercase
+        account name. Call this after any direct field mutation that is not
+        already handled by a convenience method such as `deposit`, `withdraw`,
+        `buy_shares`, or `reset`.
+        """
+
         self.name = _normalize_name(self.name)
         write_account(self.name, self.model_dump(mode="json"))
 
     def reset(self, strategy: str = "") -> None:
+        """Return the account to a clean starting state and save it.
+
+        The reset keeps the same normalized account name, restores cash to
+        `INITIAL_BALANCE`, replaces the strategy with the provided string, and
+        clears holdings, transactions, and portfolio value history. This is
+        useful before starting a new simulation run for the same participant.
+        """
+
         self.name = _normalize_name(self.name)
         self.balance = INITIAL_BALANCE
         self.strategy = strategy
@@ -68,6 +115,13 @@ class Account(BaseModel):
         self.save()
 
     def deposit(self, amount: float) -> None:
+        """Add positive cash to the account and persist the new balance.
+
+        Raises `ValueError` when the amount is zero or negative. Deposits do not
+        create transaction records because they are cash management operations,
+        not market trades.
+        """
+
         if amount <= 0:
             raise ValueError("deposit amount must be positive")
 
@@ -75,6 +129,12 @@ class Account(BaseModel):
         self.save()
 
     def withdraw(self, amount: float) -> None:
+        """Remove cash from the account and persist the new balance.
+
+        The amount must be positive and cannot exceed the current cash balance.
+        A failed withdrawal raises `ValueError` and leaves the account unchanged.
+        """
+
         if amount <= 0:
             raise ValueError("withdrawal amount must be positive")
         if amount > self.balance:
@@ -84,6 +144,16 @@ class Account(BaseModel):
         self.save()
 
     def buy_shares(self, symbol: str, quantity: float, rationale: str) -> str:
+        """Buy shares at the latest market price plus spread.
+
+        The symbol is normalized to uppercase, the quantity must be positive,
+        and the account must have enough cash for `price * (1 + SPREAD) *
+        quantity`. On success this method subtracts cash, increases holdings,
+        records a timestamped buy transaction with the rationale, appends a
+        portfolio value point, saves the account, writes a buy log, and returns a
+        human-readable prefix followed by the latest JSON report.
+        """
+
         normalized_symbol = _normalize_symbol(symbol)
         _validate_quantity(quantity)
 
@@ -117,6 +187,16 @@ class Account(BaseModel):
         return _format_trade_response(message, report)
 
     def sell_shares(self, symbol: str, quantity: float, rationale: str) -> str:
+        """Sell shares at the latest market price minus spread.
+
+        The symbol is normalized to uppercase, the quantity must be positive,
+        and the account must hold enough shares. On success this method adds
+        cash, decreases or removes the holding, records a timestamped sell
+        transaction with the rationale, appends a portfolio value point, saves
+        the account, writes a sell log, and returns a human-readable prefix
+        followed by the latest JSON report.
+        """
+
         normalized_symbol = _normalize_symbol(symbol)
         _validate_quantity(quantity)
 
@@ -155,24 +235,61 @@ class Account(BaseModel):
         return _format_trade_response(message, report)
 
     def calculate_portfolio_value(self) -> float:
+        """Calculate current total account value using live market prices.
+
+        The returned value is cash balance plus the market value of every current
+        holding. Each holding is priced through `backend.market.get_share_price`,
+        so this call can raise if a ticker cannot be priced.
+        """
+
         holdings_value = 0.0
         for symbol, quantity in self.holdings.items():
             holdings_value += get_share_price(symbol) * quantity
         return self.balance + holdings_value
 
     def calculate_profit_loss(self, portfolio_value: float) -> float:
+        """Calculate profit or loss relative to the initial starting balance.
+
+        Pass a portfolio value from `calculate_portfolio_value` or another
+        trusted valuation source. Positive numbers indicate gains above
+        `INITIAL_BALANCE`; negative numbers indicate losses.
+        """
+
         return portfolio_value - INITIAL_BALANCE
 
     def get_holdings(self) -> dict[str, float]:
+        """Return a copy of the current holdings by ticker symbol.
+
+        The copy prevents callers from accidentally mutating account state
+        without going through the account methods and persistence flow.
+        """
+
         return dict(self.holdings)
 
     def list_transactions(self) -> list[dict[str, Any]]:
+        """Return all recorded trade transactions as JSON-compatible dicts.
+
+        The list is ordered from oldest to newest because transactions are
+        appended as trades occur. Each item includes symbol, quantity, execution
+        price, type, rationale, and timestamp.
+        """
+
         return [
             transaction.model_dump(mode="json")
             for transaction in self.transactions
         ]
 
     def report(self) -> str:
+        """Generate, persist, log, and return a JSON account report.
+
+        This method calculates current portfolio value from live prices,
+        calculates total profit/loss versus `INITIAL_BALANCE`, appends the value
+        to the portfolio time series, saves the account, writes a read/report log
+        entry, and returns a JSON string containing balance, holdings,
+        transactions, portfolio values, total portfolio value, and total
+        profit/loss.
+        """
+
         portfolio_value = self.calculate_portfolio_value()
         profit_loss = self.calculate_profit_loss(portfolio_value)
         timestamp = datetime.now(timezone.utc).isoformat()
@@ -201,9 +318,13 @@ class Account(BaseModel):
         )
 
     def get_strategy(self) -> str:
+        """Return the current strategy text for this account."""
+
         return self.strategy
 
     def change_strategy(self, strategy: str) -> None:
+        """Replace the account strategy text and persist the change."""
+
         self.strategy = strategy
         self.save()
 
