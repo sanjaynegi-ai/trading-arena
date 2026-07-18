@@ -5,6 +5,7 @@ description = "Autonomous trading arena"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi",
+    "gradio>=6.20.0",
     "mcp",
     "openai",
     "openai-agents",

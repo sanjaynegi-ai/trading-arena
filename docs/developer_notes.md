@@ -17,15 +17,6 @@ Market MCP server:
 uv run -m backend.market_server
 ```
 
-Push MCP server:
-
-```powershell
-uv run -m backend.push_server
-```
-
-Note: `backend.push_server` is listed for the planned local push server, but
-`backend/push_server.py` does not currently exist in this checkout.
-
 ## Account Client
 
 `backend/accounts_client.py` starts the accounts server over stdio with:
