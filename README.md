@@ -33,6 +33,12 @@ Run the Gradio dashboard:
 uv run python app.py
 ```
 
+Or start the local stack with the helper script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File script\start.ps1
+```
+
 Run the autonomous trading scheduler in a separate terminal:
 
 ```powershell
@@ -102,6 +108,39 @@ Start the dashboard:
 uv run python app.py
 ```
 
+## Start And Stop Scripts
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File script\start.ps1
+powershell -ExecutionPolicy Bypass -File script\stop.ps1
+```
+
+macOS/Linux:
+
+```bash
+./script/start.sh
+./script/stop.sh
+```
+
+By default, the scripts start or stop the dashboard, API, and scheduler. Runtime
+PID files and logs are written to `.run/`.
+
+Useful Windows options:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File script\start.ps1 -NoApi -NoScheduler
+powershell -ExecutionPolicy Bypass -File script\stop.ps1 -DashboardOnly
+```
+
+Useful macOS/Linux options:
+
+```bash
+./script/start.sh --no-api --no-scheduler
+./script/stop.sh --dashboard-only
+```
+
 ## Project Structure
 
 ```text
@@ -125,6 +164,11 @@ uv run python app.py
 |-- dashboard/
 |   |-- ui.py                      # Gradio UI and leaderboard
 |   `-- util.py                    # Dashboard CSS
+|-- script/
+|   |-- start.ps1                  # Windows start helper
+|   |-- stop.ps1                   # Windows stop helper
+|   |-- start.sh                   # macOS/Linux start helper
+|   `-- stop.sh                    # macOS/Linux stop helper
 |-- docs/
 |   |-- developer_notes.md         # Runtime and MCP notes
 |   |-- design.md                  # Architecture sequence diagram

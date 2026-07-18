@@ -35,6 +35,7 @@ htmlcov/
 Thumbs.db
 
 # Local runtime artifacts
+.run/
 *.log
 *.sqlite
 *.sqlite3
