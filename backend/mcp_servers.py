@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -27,6 +28,12 @@ def _project_cwd_params(command: str, args: list[str]) -> dict[str, object]:
     }
 
 
+def _memory_db_name(name: str, lastname: str) -> str:
+    raw_name = f"{name}_{lastname}".strip().lower()
+    cleaned = re.sub(r"[^a-z0-9]+", "_", raw_name).strip("_")
+    return f"{cleaned or 'trader'}.db"
+
+
 def trader_mcp_servers() -> list[MCPServerStdio]:
     """Return stdio MCP servers available to trading agents."""
 
@@ -43,7 +50,7 @@ def trader_mcp_servers() -> list[MCPServerStdio]:
     ]
 
 
-def researcher_mcp_servers(name: str) -> list[MCPServerStdio]:
+def researcher_mcp_servers(name: str, lastname: str) -> list[MCPServerStdio]:
     """Return stdio MCP servers available to a named research agent."""
 
     fetch = MCPServerStdio(
@@ -66,7 +73,9 @@ def researcher_mcp_servers(name: str) -> list[MCPServerStdio]:
             "command": "npx",
             "args": ["-y", "mcp-memory-libsql"],
             "cwd": str(PROJECT_ROOT),
-            "env": _env_with(LIBSQL_URL=f"file:./memory/{name}.db"),
+            "env": _env_with(
+                LIBSQL_URL=f"file:./memory/{_memory_db_name(name, lastname)}"
+            ),
         },
         client_session_timeout_seconds=TIMEOUT_SECONDS,
     )

@@ -16,5 +16,10 @@ Rules the system must enforce:
 - Can't buy more shares than the account can afford
 - Can't sell shares the account doesn't hold
 
-Share prices come from a function get_share_price(ticker). For testing, this
-function returns fixed prices for five symbols: MSFT, AAPL, AMZN, TSLA, GOOGL.
+Share prices come from a function `get_share_price(ticker)`.
+
+Current implementation note: `backend.market.get_share_price(symbol)` uses
+Yahoo Finance through `yfinance`. It normalizes the ticker, tries fast price
+data first, then falls back to recent historical close prices. The original
+course requirement expected fixed test prices for a small set of symbols, but
+this implementation now supports any ticker Yahoo Finance can price.

@@ -192,7 +192,7 @@ class Trader(TraderABC):
             ]
             researcher_servers = [
                 await stack.enter_async_context(server)
-                for server in researcher_mcp_servers(self.name)
+                for server in researcher_mcp_servers(self.name, self.lastname)
             ]
             return await self.run_agent(trader_servers, researcher_servers)
 

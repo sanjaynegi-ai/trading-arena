@@ -213,7 +213,7 @@ def create_ui() -> gr.Blocks:
         fill_width=True,
     ) as demo:
         gr.Markdown(
-            "# Trading Arena\nFour autonomous traders, one scoreboard.",
+            "# Trading Arena\nAutonomous traders, one scoreboard.",
             elem_classes=["arena-header"],
         )
         LeaderboardView(traders).make_ui()

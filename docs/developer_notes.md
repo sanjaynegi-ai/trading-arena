@@ -3,6 +3,13 @@
 Run local MCP servers from the project root so package imports and relative
 paths resolve correctly.
 
+For broader docs, see:
+
+- [architecture.md](architecture.md)
+- [mcp_servers.md](mcp_servers.md)
+- [configuration.md](configuration.md)
+- [running.md](running.md)
+
 ## Local MCP Servers
 
 Accounts MCP server:
@@ -47,9 +54,12 @@ Environment variables:
 - `OPENAI_API_KEY`: Required for normal OpenAI model runs.
 - `TAVILY_API_KEY`: Used by the Tavily MCP search server for researcher web
   search.
-- `RUN_EVERY_N_MINUTES`: Scheduler interval in minutes. Defaults to `60`.
+- `RUN_EVERY_N_MINUTES`: Scheduler interval in minutes. Defaults to `15`.
 - `RUN_EVEN_WHEN_MARKET_IS_CLOSED`: Set to `true` to run traders even outside
   regular market hours. Defaults to `false`.
+- `SCHEDULER_TIME_WINDOW`: Controls when the scheduler may run. Options are
+  `us_market`, `us_office`, `india_office`, `us_or_india_office`, and `always`.
+  Defaults to `us_market`.
 - `USE_MANY_MODELS`: Set to `true` to map traders onto `MANY_MODELS` from
   `backend/roster.py`. Defaults to `false`, which uses each profile's
   `model_name`.

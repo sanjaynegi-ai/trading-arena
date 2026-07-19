@@ -27,30 +27,15 @@ sanjay_strategy = (
     "over chasing short-term spikes."
 )
 
-diwaker_strategy = (
+neil_strategy = (
     "Seek momentum opportunities in liquid technology and growth names. Confirm "
     "that price strength is supported by recent news, earnings, or sector "
     "tailwinds before buying."
 )
 
-sabya_strategy = (
-    "Use a balanced quality-and-value approach. Favor companies with healthy "
-    "balance sheets, consistent profitability, and market pessimism that appears "
-    "temporary rather than structural."
-)
-
-anuradha_strategy = (
-    "Prioritize risk-aware diversification across resilient sectors. Trim "
-    "overextended positions, avoid concentration, and use live market context "
-    "before adding exposure."
-)
-
-
 TRADER_PROFILES: list[TraderProfile] = [
     TraderProfile(name="Sanjay", lastname="Negi", strategy=sanjay_strategy),
-    TraderProfile(name="Diwaker", lastname="Sharma", strategy=diwaker_strategy),
-    TraderProfile(name="Sabya", lastname="Sachi", strategy=sabya_strategy),
-    TraderProfile(name="Anuradha", lastname="Sharma", strategy=anuradha_strategy),
+    TraderProfile(name="Neil", lastname="Sharma", strategy=neil_strategy),
 ]
 
 

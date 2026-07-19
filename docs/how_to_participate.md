@@ -4,6 +4,16 @@ This arena is built so each learner can join by adding a trader profile, then
 optionally customizing the trader workflow, researcher, prompts, model, and MCP
 tools.
 
+Related docs:
+
+- [architecture.md](architecture.md): components, diagrams, and runtime flow
+- [mcp_servers.md](mcp_servers.md): account, market, researcher, fetch, search,
+  and memory MCP wiring
+- [configuration.md](configuration.md): `.env` options, model routing, and
+  scheduler time windows
+- [running.md](running.md): commands for running components independently or
+  through the start scripts
+
 ## Arena Design
 
 The arena starts from the roster in `backend/roster.py`. Each learner is
@@ -11,6 +21,14 @@ registered as a `TraderProfile` with a `name`, `lastname`, `strategy`, and
 `model_name`. When the scheduler in `backend/trading_arena.py` starts,
 `create_traders()` reads `TRADER_PROFILES`, resolves the model names, and builds
 one trader runtime for each profile.
+
+The roster only defines who participates; it does not define a per-trader stock
+universe. Traders can attempt to trade any ticker symbol that Yahoo Finance can
+price. The account code normalizes symbols and calls
+`backend.market.get_share_price(symbol)` from `Account.buy_shares(...)` and
+`Account.sell_shares(...)` in `backend/accounts.py`. The price lookup itself is
+defined in `backend/market.py`. If Yahoo Finance cannot return a usable positive
+price for a symbol, the trade fails with a `ValueError`.
 
 Each trader is an autonomous competitor. On every cycle, the trader can use MCP
 tools to inspect the account, research the market, and place trades:
@@ -33,7 +51,17 @@ The default researcher has its own MCP tools:
   `tavily_search` tool so the researcher stays focused on search.
 - Memory: stores and recalls useful notes about companies, sectors, sources, and
   previous research. Each trader gets an isolated memory database so learners do
-  not overwrite each other's research context.
+  not overwrite each other's research context. The researcher LLM decides when
+  to use memory tools; the application code only registers the memory MCP
+  server. See [mcp_servers.md](mcp_servers.md#researcher-memory) for inspection
+  commands and storage details.
+
+The research workflow is agent-directed rather than hardcoded. The trader asks
+the Researcher for a specific ticker, theme, sector, or broad market scan; the
+Researcher may use Tavily search for discovery, Fetch to read a known URL, and
+Memory to recall or store durable notes. See
+[mcp_servers.md](mcp_servers.md#researcher-research-flow) for the complete
+flow.
 
 The normal flow is:
 
@@ -67,6 +95,15 @@ async def run(self) -> str:
 
 The default implementation is `backend.traders.Trader`.
 
+The account and market MCP servers are registered with the trader at runtime, not
+inside `backend/roster.py`. `Trader.run_with_mcp_servers()` in
+`backend/traders.py` opens the server bundle returned by
+`backend.mcp_servers.trader_mcp_servers()`. That bundle currently contains the
+local accounts server command `uv run -m backend.accounts_server` and the Yahoo
+Finance market server command `uvx mcp-yahoo-finance`. The opened server objects
+are then passed into `Agent(..., mcp_servers=trader_servers)` in
+`Trader.create_agent(...)`.
+
 ## Fast Path: Add A New Competitor
 
 Most learners only need to edit `backend/roster.py`.
@@ -85,9 +122,7 @@ nina_strategy = (
 ```python
 TRADER_PROFILES: list[TraderProfile] = [
     TraderProfile(name="Sanjay", lastname="Negi", strategy=sanjay_strategy),
-    TraderProfile(name="Diwaker", lastname="Sharma", strategy=diwaker_strategy),
-    TraderProfile(name="Sabya", lastname="Sachi", strategy=sabya_strategy),
-    TraderProfile(name="Anuradha", lastname="Sharma", strategy=anuradha_strategy),
+    TraderProfile(name="Neil", lastname="Sharma", strategy=neil_strategy),
     TraderProfile(name="Nina", lastname="Momentum", strategy=nina_strategy),
 ]
 ```
@@ -169,6 +204,12 @@ pattern:
 - catch exceptions per trader
 - toggle between trade and rebalance mode
 
+The default researcher is attached to the trader in
+`Trader.create_agent(...)` in `backend/traders.py`. That method calls
+`get_researcher_tool(researcher_servers, self.model_name)`, stores the returned
+tool in `tools=[researcher_tool]`, and passes the account and market MCP bundle
+through `mcp_servers=trader_servers`.
+
 If you add a custom trader class, also update the scheduler factory in
 `backend/trading_arena.py` so your profile uses that class.
 
@@ -183,6 +224,14 @@ get_researcher_tool(mcp_servers, model_name)
 
 It uses `researcher_instructions()` and the researcher MCP server bundle from
 `backend/mcp_servers.py`.
+
+The fetch, web search, and memory MCP servers are registered with the researcher
+through `researcher_mcp_servers(name, lastname)` in `backend/mcp_servers.py`.
+`Trader.run_with_mcp_servers()` opens that bundle with the current trader's
+first and last name, then passes the opened `researcher_servers` into
+`get_researcher_tool(...)`.
+`get_researcher(...)` finally creates the researcher with
+`Agent(..., mcp_servers=mcp_servers)`.
 
 Use this default researcher when you only need general web research, fetch, and
 memory. If the learner only wants a different tone or research checklist, edit
@@ -241,7 +290,7 @@ If the researcher needs different tools, update or add a server factory in
 `backend/mcp_servers.py`. For example, a filings researcher might add an SEC MCP
 server, while a macro researcher might add a data source for rates, inflation,
 or commodities. Keep each learner's memory isolated by using a per-trader path
-such as `file:./memory/{name}.db`.
+based on first and last name, such as `file:./memory/nina_momentum.db`.
 
 ### Connect A Custom Researcher To A Trader
 
@@ -297,15 +346,25 @@ MCP server bundles live in `backend/mcp_servers.py`.
 
 Trader servers include:
 
-- accounts server: account tools and account resources
-- Yahoo Finance market server via `uvx mcp-yahoo-finance`
+- accounts server: registered in `trader_mcp_servers()` with
+  `uv run -m backend.accounts_server`; exposes account tools and account
+  resources.
+- Yahoo Finance market server: registered in `trader_mcp_servers()` with
+  `uvx mcp-yahoo-finance`; exposes live market-data tools to traders.
+
+There is also a local `backend/market_server.py` with a `lookup_share_price`
+tool, but the default trader bundle currently uses the Yahoo Finance MCP package
+directly instead of this local server.
 
 Researcher servers include:
 
-- fetch
-- Tavily search filtered to `tavily_search`
-- `mcp-memory-libsql` with one database per trader:
-  `file:./memory/{name}.db`
+- fetch: registered in `researcher_mcp_servers(name, lastname)` with
+  `uvx mcp-server-fetch`.
+- Tavily search: registered in `researcher_mcp_servers(name, lastname)` with
+  `npx -y tavily-mcp@latest` and filtered to `tavily_search`.
+- memory: registered in `researcher_mcp_servers(name, lastname)` with
+  `npx -y mcp-memory-libsql` and one database per trader:
+  `file:./memory/{firstname}_{lastname}.db`.
 
 The account client expects this command to work from the project root over
 stdio:
