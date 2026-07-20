@@ -10,8 +10,7 @@ from backend.database import read_log
 from backend.trading_arena import lastnames, model_names, names
 
 
-ACCOUNT_REFRESH_SECONDS = 120
-LOG_REFRESH_SECONDS = 0.5
+ACCOUNT_REFRESH_SECONDS = 5
 
 
 class Trader:
@@ -91,6 +90,9 @@ class LeaderboardView:
             "</table>"
         )
 
+    def refresh(self) -> Any:
+        return gr.update(value=self.render())
+
     def make_ui(self) -> None:
         with gr.Row():
             with gr.Column():
@@ -99,9 +101,10 @@ class LeaderboardView:
 
         timer = gr.Timer(value=ACCOUNT_REFRESH_SECONDS)
         timer.tick(
-            fn=self.render,
+            fn=self.refresh,
             outputs=leaderboard,
             queue=False,
+            trigger_mode="always_last",
         )
 
 
@@ -109,24 +112,38 @@ class TraderView:
     def __init__(self, trader: Trader) -> None:
         self.trader = trader
 
-    def reload(self) -> tuple[str, list[list[Any]], list[list[Any]], str]:
+    def reload(self) -> tuple[str, list[list[Any]], list[list[Any]], str, str]:
         account = self.trader.reload()
-        portfolio_value = account.calculate_portfolio_value()
-        pnl = account.calculate_profit_loss(portfolio_value)
-        summary = (
-            "<div class=\"trader-card\">"
-            f"<h3>{escape(self.trader.full_name)}</h3>"
-            f"<p>{escape(self.trader.model_name)}</p>"
-            f"<div class=\"metric-line\"><span>Cash</span><strong>{_money(account.balance)}</strong></div>"
-            f"<div class=\"metric-line\"><span>Portfolio</span><strong>{_money(portfolio_value)}</strong></div>"
-            f"<div class=\"metric-line\"><span>P&amp;L</span><strong class=\"{_pnl_class(pnl)}\">{_signed_money(pnl)}</strong></div>"
-            "</div>"
-        )
         return (
-            summary,
+            self._summary_html(account),
             self._holdings_rows(account),
             self._transaction_rows(account),
+            self.reload_research(),
             self.reload_logs(),
+        )
+
+    def refresh(self) -> tuple[Any, Any, Any, Any, Any]:
+        summary, holdings, transactions, research, logs = self.reload()
+        return (
+            gr.update(value=summary),
+            gr.update(value=holdings),
+            gr.update(value=transactions),
+            gr.update(value=research),
+            gr.update(value=logs),
+        )
+
+    def reload_research(self) -> str:
+        logs = [
+            row
+            for row in read_log(self.trader.name, last_n=200)
+            if row["type"] == "research"
+        ]
+        if not logs:
+            return "No researcher output yet."
+
+        return "\n\n".join(
+            f"{row['datetime']}\n{row['message']}"
+            for row in logs[-3:]
         )
 
     def reload_logs(self) -> str:
@@ -140,7 +157,12 @@ class TraderView:
         )
 
     def make_ui(self) -> None:
-        summary, holdings, transactions, logs = self.reload()
+        account = self.trader.reload()
+        summary = self._summary_html(account)
+        holdings = self._holdings_rows(account)
+        transactions = self._transaction_rows(account)
+        research = self.reload_research()
+        logs = self.reload_logs()
 
         with gr.Column(scale=1, min_width=260):
             summary_html = gr.HTML(value=summary, padding=True)
@@ -158,6 +180,12 @@ class TraderView:
                 label="Transactions",
                 interactive=False,
             )
+            research_box = gr.Textbox(
+                value=research,
+                label="Recent Research",
+                lines=8,
+                interactive=False,
+            )
             logs_box = gr.Textbox(
                 value=logs,
                 label="Recent Logs",
@@ -167,16 +195,29 @@ class TraderView:
 
         account_timer = gr.Timer(value=ACCOUNT_REFRESH_SECONDS)
         account_timer.tick(
-            fn=self.reload,
-            outputs=[summary_html, holdings_df, transactions_df, logs_box],
+            fn=self.refresh,
+            outputs=[
+                summary_html,
+                holdings_df,
+                transactions_df,
+                research_box,
+                logs_box,
+            ],
             queue=False,
+            trigger_mode="always_last",
         )
 
-        log_timer = gr.Timer(value=LOG_REFRESH_SECONDS)
-        log_timer.tick(
-            fn=self.reload_logs,
-            outputs=logs_box,
-            queue=False,
+    def _summary_html(self, account: Account) -> str:
+        portfolio_value = account.calculate_portfolio_value()
+        pnl = account.calculate_profit_loss(portfolio_value)
+        return (
+            "<div class=\"trader-card\">"
+            f"<h3>{escape(self.trader.full_name)}</h3>"
+            f"<p>{escape(self.trader.model_name)}</p>"
+            f"<div class=\"metric-line\"><span>Cash</span><strong>{_money(account.balance)}</strong></div>"
+            f"<div class=\"metric-line\"><span>Portfolio</span><strong>{_money(portfolio_value)}</strong></div>"
+            f"<div class=\"metric-line\"><span>P&amp;L</span><strong class=\"{_pnl_class(pnl)}\">{_signed_money(pnl)}</strong></div>"
+            "</div>"
         )
 
     @staticmethod

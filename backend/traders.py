@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
 from backend.accounts_client import read_accounts_resource, read_strategy_resource
+from backend.database import write_log
 from backend.interfaces.trader import Trader as TraderABC
 from backend.mcp_servers import researcher_mcp_servers, trader_mcp_servers
 from backend.templates import (
@@ -116,13 +117,24 @@ async def get_researcher(mcp_servers, model_name: str) -> Agent:
     )
 
 
-async def get_researcher_tool(mcp_servers, model_name: str) -> Tool:
+async def get_researcher_tool(
+    mcp_servers,
+    model_name: str,
+    account_name: str,
+) -> Tool:
     """Expose the researcher agent as a nested tool for a trader."""
 
     researcher = await get_researcher(mcp_servers, model_name)
+
+    async def log_research_output(result) -> str:
+        output = str(result.final_output)
+        write_log(account_name, "research", output)
+        return output
+
     return researcher.as_tool(
         tool_name="Researcher",
         tool_description=research_tool(),
+        custom_output_extractor=log_research_output,
     )
 
 
@@ -149,6 +161,7 @@ class Trader(TraderABC):
         researcher_tool = await get_researcher_tool(
             researcher_servers,
             self.model_name,
+            self.name,
         )
         self.agent = Agent(
             name=self.name,
