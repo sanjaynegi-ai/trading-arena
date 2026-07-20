@@ -10,6 +10,7 @@ from agents import add_trace_processor
 from dotenv import load_dotenv
 
 from backend.database import write_log
+from backend.manish_trader import ManishTrader
 from backend.roster import TRADER_PROFILES, resolve_model_names
 from backend.tracers import LogTracer
 from backend.traders import Trader
@@ -107,9 +108,17 @@ def create_traders() -> list[Trader]:
     """Create trader instances from the configured roster."""
 
     return [
-        Trader(profile.name, profile.lastname, model_name)
+        _trader_for_profile(profile.name, profile.lastname, model_name)
         for profile, model_name in zip(TRADER_PROFILES, model_names)
     ]
+
+
+def _trader_for_profile(name: str, lastname: str, model_name: str) -> Trader:
+    """Return Manish's custom workflow or the default workflow for other traders."""
+
+    if (name.strip().lower(), lastname.strip().lower()) == ("manish", "kumar"):
+        return ManishTrader(name, lastname, model_name)
+    return Trader(name, lastname, model_name)
 
 
 def _log(message: str) -> None:
