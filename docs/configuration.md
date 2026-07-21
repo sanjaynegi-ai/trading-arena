@@ -3,6 +3,12 @@
 Environment variables are loaded from `.env` at startup. Start from
 `.env.example`, then add real API keys and scheduler settings.
 
+## Local Prerequisites
+
+- Python 3.12+ and `uv` are required for the project runtime.
+- Node.js LTS is required for `npx`, which starts the Tavily web-search and
+  researcher-memory MCP servers. Confirm it is available with `npx --version`.
+
 ## Minimal Local Setup
 
 For a normal OpenAI run with researcher web search:

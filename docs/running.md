@@ -10,6 +10,10 @@ Install dependencies and create the local environment:
 uv sync
 ```
 
+Before running a trader with web search and researcher memory, install Node.js
+LTS and confirm `npx --version` works. The Tavily and memory MCP servers use
+`npx` at runtime.
+
 Create `.env` from `.env.example`, then add the keys and scheduler settings you
 need. See [configuration.md](configuration.md).
 

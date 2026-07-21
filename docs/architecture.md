@@ -11,6 +11,39 @@ The project is intentionally local-first:
 - the API is a local read-only FastAPI service
 - MCP servers are started as local stdio subprocesses when agents run
 
+## Simple Participant View
+
+This is the whole project from a participant's perspective. You own the
+Trader's investing approach; Trading Arena owns the account, trade validation,
+saved history, and dashboard.
+
+```mermaid
+flowchart TD
+    You["Participant Trader\nChoose an investing strategy"]
+    Scheduler["Trading Arena scheduler\nStarts each trading cycle"]
+    Trader["Your Trader AI\nOpenAI model decides:\nBuy, Sell, or Hold"]
+    Researcher["Researcher AI\nFinds news, evidence, and risks"]
+    Market["Market tools\nYahoo Finance prices and market data"]
+    Accounts["Central Trading Arena account\nChecks cash and holdings\nExecutes valid trades"]
+    Database[("accounts.db\nBalances, holdings, trades, logs")]
+    Dashboard["Dashboard\nShows leaderboard, portfolio,\ntransactions, and agent activity"]
+
+    You -->|"Your strategy and model"| Trader
+    Scheduler -->|"Runs every scheduled cycle"| Trader
+    Trader <-->|"Ask for research"| Researcher
+    Researcher -->|"Search, fetch, remember"| Market
+    Trader -->|"Check price and context"| Market
+    Trader -->|"Request buy or sell"| Accounts
+    Accounts -->|"Approve or reject safely"| Trader
+    Accounts -->|"Save every change"| Database
+    Database -->|"Read-only display"| Dashboard
+```
+
+**Key rule:** your Trader makes recommendations and requests trades. The
+central Arena decides whether a trade is possible, records it, and displays the
+result. A Trader cannot spend cash it does not have or sell shares it does not
+own.
+
 ## Components
 
 ### Scheduler

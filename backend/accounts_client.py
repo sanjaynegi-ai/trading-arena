@@ -6,11 +6,13 @@ from pathlib import Path
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from backend.runtime_commands import resolve_command
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 SERVER_PARAMS = StdioServerParameters(
-    command="uv",
+    command=resolve_command("uv"),
     args=["run", "-m", "backend.accounts_server"],
     cwd=PROJECT_ROOT,
     env=None,
