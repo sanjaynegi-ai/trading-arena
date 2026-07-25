@@ -40,9 +40,9 @@ manish_strategy = (
 )
 
 mukesh_strategy = (
-    "Make evidence-based, risk-aware decisions. Prefer understandable companies "
-    "with clear business strength, confirm ideas with recent news and market data, "
-    "and avoid concentrated or impulsive trades."
+    "Focus on high-conviction opportunities with strong momentum and clear catalysts. "
+    "Look for technical confirmation, recent news flow, and disciplined risk control "
+    "while avoiding overly crowded or low-quality setups."
 )
 
 TRADER_PROFILES: list[TraderProfile] = [
