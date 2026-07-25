@@ -17,7 +17,7 @@ TIMEOUT_SECONDS = 120
 UV_COMMAND = resolve_command("uv")
 UVX_COMMAND = resolve_command("uvx")
 NPX_COMMAND = resolve_command("npx")
-MANISH_MARKET_TOOL_NAMES = [
+MUKESH_MARKET_TOOL_NAMES = [
     "get_current_stock_price",
     "get_historical_stock_prices",
     "get_news",
@@ -53,7 +53,7 @@ def trader_mcp_servers() -> list[MCPServerStdio]:
     return [_accounts_mcp_server(), *market_mcp_servers()]
 
 
-def manish_trader_mcp_servers() -> list[MCPServerStdio]:
+def mukesh_trader_mcp_servers() -> list[MCPServerStdio]:
     """Return Manish's account server plus a compact market-data tool set."""
 
     return [_accounts_mcp_server(), *focused_market_mcp_servers()]
@@ -85,7 +85,7 @@ def market_mcp_servers() -> list[MCPServerStdio]:
 
 
 def focused_market_mcp_servers() -> list[MCPServerStdio]:
-    """Return Manish's compact Yahoo Finance tool set to limit model context."""
+    """Return Mukesh's compact Yahoo Finance tool set to limit model context."""
 
     return [
         MCPServerStdio(
@@ -96,7 +96,7 @@ def focused_market_mcp_servers() -> list[MCPServerStdio]:
             },
             client_session_timeout_seconds=TIMEOUT_SECONDS,
             tool_filter=create_static_tool_filter(
-                allowed_tool_names=MANISH_MARKET_TOOL_NAMES
+                allowed_tool_names=MUKESH_MARKET_TOOL_NAMES
             ),
         )
     ]
