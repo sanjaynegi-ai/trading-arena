@@ -45,11 +45,22 @@ mukesh_strategy = (
     "while avoiding overly crowded or low-quality setups."
 )
 
+ashish_strategy = (
+    "Catalyst-driven strategy focusing on earnings, product launches, "
+    "regulatory events, macroeconomic reports, analyst upgrades, M&A activity, "
+    "and geopolitical catalysts. Start with 2-3 small positions sized at "
+    "2-5% of the portfolio. Increase position size and number of trades only "
+    "after multiple successful catalyst-driven cycles. Avoid low-liquidity "
+    "microcaps and penny stocks. Use evidence-based decisions supported by "
+    "recent news, verified tickers, and live market data."
+)
+
 TRADER_PROFILES: list[TraderProfile] = [
     TraderProfile(name="Sanjay", lastname="Negi", strategy=sanjay_strategy),
     TraderProfile(name="Neil", lastname="Sharma", strategy=neil_strategy),
     TraderProfile(name="Manish", lastname="Kumar", strategy=manish_strategy),
     TraderProfile(name="Mukesh", lastname="Negi", strategy=mukesh_strategy),
+    TraderProfile(name="Ashish", lastname="Bhutani", strategy=ashish_strategy, model_name="gpt-5.5"),  
 ]
 
 

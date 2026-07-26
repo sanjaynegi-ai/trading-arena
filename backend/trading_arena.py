@@ -10,6 +10,8 @@ from agents import add_trace_processor
 from dotenv import load_dotenv
 
 from backend.database import write_log
+from backend.manish_trader import ManishTrader
+from backend.ashish_trader import AshishTrader
 from backend.mukesh_trader import MukeshTrader
 from backend.roster import TRADER_PROFILES, resolve_model_names
 from backend.tracers import LogTracer
@@ -114,10 +116,14 @@ def create_traders() -> list[Trader]:
 
 
 def _trader_for_profile(name: str, lastname: str, model_name: str) -> Trader:
-    """Return Mukesh's custom workflow or the default workflow for other traders."""
+    """Everyone's custom workflow or the default workflow for other traders."""
 
     if (name.strip().lower(), lastname.strip().lower()) == ("mukesh", "negi"):
         return MukeshTrader(name, lastname, model_name)
+    if (name.strip().lower(), lastname.strip().lower()) == ("manish", "kumar"):
+        return ManishTrader(name, lastname, model_name)
+    if (name.strip().lower(), lastname.strip().lower()) == ("ashish", "bhutani"):
+        return AshishTrader(name, lastname, model_name) 
     return Trader(name, lastname, model_name)
 
 
