@@ -53,10 +53,16 @@ def trader_mcp_servers() -> list[MCPServerStdio]:
     return [_accounts_mcp_server(), *market_mcp_servers()]
 
 
-def mukesh_trader_mcp_servers() -> list[MCPServerStdio]:
+def manish_trader_mcp_servers() -> list[MCPServerStdio]:
     """Return Manish's account server plus a compact market-data tool set."""
 
     return [_accounts_mcp_server(), *focused_market_mcp_servers()]
+
+
+def mukesh_trader_mcp_servers() -> list[MCPServerStdio]:
+    """Backward-compatible alias for Manish's trader MCP server bundle."""
+
+    return manish_trader_mcp_servers()
 
 
 def _accounts_mcp_server() -> MCPServerStdio:
