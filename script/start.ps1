@@ -59,7 +59,7 @@ function Start-TradingArenaProcess {
 if (-not $NoDashboard) {
     Start-TradingArenaProcess `
         -Name "dashboard" `
-        -Arguments @("run", "python", "app.py", "--server-port", "$DashboardPort")
+        -Arguments @("run", "app.py", "--server-port", "$DashboardPort")
 }
 
 if (-not $NoApi) {

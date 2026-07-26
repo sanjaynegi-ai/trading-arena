@@ -65,6 +65,12 @@ def mukesh_trader_mcp_servers() -> list[MCPServerStdio]:
     return manish_trader_mcp_servers()
 
 
+def manoj_trader_mcp_servers() -> list[MCPServerStdio]:
+    """Return Manoj's account server plus a compact market-data tool set."""
+
+    return [_accounts_mcp_server(), *focused_market_mcp_servers()]
+
+
 def _accounts_mcp_server() -> MCPServerStdio:
     return MCPServerStdio(
         params=_project_cwd_params(
