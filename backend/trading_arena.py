@@ -13,6 +13,7 @@ from backend.database import write_log
 from backend.manish_trader import ManishTrader
 from backend.ashish_trader import AshishTrader
 from backend.mukesh_trader import MukeshTrader
+from backend.manoj_trader import ManojTrader
 from backend.roster import TRADER_PROFILES, resolve_model_names
 from backend.tracers import LogTracer
 from backend.traders import Trader
