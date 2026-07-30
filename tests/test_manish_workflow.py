@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import unittest
+from pathlib import Path
 
 from backend.manish_trader import ManishTrader
 from backend.mcp_servers import MANISH_MARKET_TOOL_NAMES, manish_trader_mcp_servers
@@ -55,9 +57,13 @@ class ManishWorkflowTests(unittest.TestCase):
         self.assertLess(len(compacted), len(long_output))
 
     def test_local_bin_path_is_prepended(self) -> None:
-        environment = with_local_bin_path({"PATH": "/usr/bin:/bin"})
+        path_value = f"/usr/bin{os.pathsep}/bin"
+        environment = with_local_bin_path({"PATH": path_value})
 
-        self.assertTrue(environment["PATH"].split(":")[0].endswith("/.local/bin"))
+        self.assertEqual(
+            environment["PATH"].split(os.pathsep)[0],
+            str(Path.home() / ".local" / "bin"),
+        )
 
 
 if __name__ == "__main__":

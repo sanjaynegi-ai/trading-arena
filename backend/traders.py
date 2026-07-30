@@ -12,7 +12,11 @@ from openai import AsyncOpenAI
 from backend.accounts_client import read_accounts_resource, read_strategy_resource
 from backend.database import write_log
 from backend.interfaces.trader import Trader as TraderABC
-from backend.mcp_servers import researcher_mcp_servers, trader_mcp_servers
+from backend.mcp_servers import (
+    open_mcp_servers,
+    researcher_mcp_servers,
+    trader_mcp_servers,
+)
 from backend.templates import (
     rebalance_message,
     research_tool,
@@ -199,14 +203,11 @@ class Trader(TraderABC):
         """Open trader and researcher MCP servers for one agent run."""
 
         async with AsyncExitStack() as stack:
-            trader_servers = [
-                await stack.enter_async_context(server)
-                for server in trader_mcp_servers()
-            ]
-            researcher_servers = [
-                await stack.enter_async_context(server)
-                for server in researcher_mcp_servers(self.name, self.lastname)
-            ]
+            trader_servers = await open_mcp_servers(stack, trader_mcp_servers())
+            researcher_servers = await open_mcp_servers(
+                stack,
+                researcher_mcp_servers(self.name, self.lastname),
+            )
             return await self.run_agent(trader_servers, researcher_servers)
 
     async def run_with_trace(self) -> str:
