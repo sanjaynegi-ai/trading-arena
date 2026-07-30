@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from backend.database import write_log
 from backend.manish_trader import ManishTrader
 from backend.ashish_trader import AshishTrader
+from backend.gaurav_trader import GauravTrader
 from backend.mukesh_trader import MukeshTrader
 from backend.manoj_trader import ManojTrader
 from backend.roster import TRADER_PROFILES, resolve_model_names
@@ -124,7 +125,9 @@ def _trader_for_profile(name: str, lastname: str, model_name: str) -> Trader:
     if (name.strip().lower(), lastname.strip().lower()) == ("manish", "kumar"):
         return ManishTrader(name, lastname, model_name)
     if (name.strip().lower(), lastname.strip().lower()) == ("ashish", "bhutani"):
-        return AshishTrader(name, lastname, model_name) 
+        return AshishTrader(name, lastname, model_name)
+    if (name.strip().lower(), lastname.strip().lower()) == ("gaurav", "jain"):
+        return GauravTrader(name, lastname, model_name)
     return Trader(name, lastname, model_name)
 
 

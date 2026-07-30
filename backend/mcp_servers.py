@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+from contextlib import AsyncExitStack
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -24,6 +25,7 @@ MUKESH_MARKET_TOOL_NAMES = [
     "get_earning_dates",
     "get_income_statement",
 ]
+MANISH_MARKET_TOOL_NAMES = MUKESH_MARKET_TOOL_NAMES
 
 
 def _env_with(**updates: str) -> dict[str, str]:
@@ -39,6 +41,24 @@ def _project_cwd_params(command: str, args: list[str]) -> dict[str, object]:
         "cwd": str(PROJECT_ROOT),
         "env": _env_with(),
     }
+
+
+async def open_mcp_servers(
+    stack: AsyncExitStack,
+    servers: list[MCPServerStdio],
+) -> list[MCPServerStdio]:
+    """Open MCP servers while skipping those that fail to initialize."""
+
+    opened_servers: list[MCPServerStdio] = []
+    for server in servers:
+        try:
+            opened_servers.append(await stack.enter_async_context(server))
+        except Exception as exc:  # pragma: no cover - defensive runtime handling
+            print(
+                f"Warning: failed to initialize MCP server {type(server).__name__}: {exc}",
+                flush=True,
+            )
+    return opened_servers
 
 
 def _memory_db_name(name: str, lastname: str) -> str:
@@ -86,26 +106,24 @@ def market_mcp_servers() -> list[MCPServerStdio]:
 
     return [
         MCPServerStdio(
-            params={
-                "command": UVX_COMMAND,
-                "args": ["mcp-yahoo-finance"],
-                "env": _env_with(),
-            },
+            params=_project_cwd_params(
+                UV_COMMAND,
+                ["run", "-m", "backend.market_server"],
+            ),
             client_session_timeout_seconds=TIMEOUT_SECONDS,
         )
     ]
 
 
 def focused_market_mcp_servers() -> list[MCPServerStdio]:
-    """Return Mukesh's compact Yahoo Finance tool set to limit model context."""
+    """Return Mukesh's compact market-data tool set to limit model context."""
 
     return [
         MCPServerStdio(
-            params={
-                "command": UVX_COMMAND,
-                "args": ["mcp-yahoo-finance"],
-                "env": _env_with(),
-            },
+            params=_project_cwd_params(
+                UV_COMMAND,
+                ["run", "-m", "backend.market_server"],
+            ),
             client_session_timeout_seconds=TIMEOUT_SECONDS,
             tool_filter=create_static_tool_filter(
                 allowed_tool_names=MUKESH_MARKET_TOOL_NAMES
@@ -114,17 +132,23 @@ def focused_market_mcp_servers() -> list[MCPServerStdio]:
     ]
 
 
-def researcher_mcp_servers(name: str, lastname: str) -> list[MCPServerStdio]:
-    """Return stdio MCP servers available to a named research agent."""
+def _fetch_mcp_server() -> MCPServerStdio:
+    """Return a fetch MCP server configured for the current mcp package version."""
 
-    fetch = MCPServerStdio(
+    return MCPServerStdio(
         params={
             "command": UVX_COMMAND,
-            "args": ["mcp-server-fetch"],
+            "args": ["--with", "mcp<1", "mcp-server-fetch"],
             "env": _env_with(),
         },
         client_session_timeout_seconds=TIMEOUT_SECONDS,
     )
+
+
+def researcher_mcp_servers(name: str, lastname: str) -> list[MCPServerStdio]:
+    """Return stdio MCP servers available to a named research agent."""
+
+    fetch = _fetch_mcp_server()
     search = MCPServerStdio(
         params={
             "command": NPX_COMMAND,

@@ -61,13 +61,22 @@ ashish_strategy = (
     "recent news, verified tickers, and live market data."
 )
 
+gaurav_strategy = (
+    "Focus on high-quality, durable businesses with strong fundamentals, "
+    "sustainable competitive advantages, and long-term growth potential. "
+    "Avoid speculative trades and make evidence-based investment decisions using recent earnings, "
+    "financial statements, market data, and technical analysis for disciplined entry and risk management."
+)
+
+
 TRADER_PROFILES: list[TraderProfile] = [
     TraderProfile(name="Sanjay", lastname="Negi", strategy=sanjay_strategy),
     TraderProfile(name="Neil", lastname="Sharma", strategy=neil_strategy),
     TraderProfile(name="Manish", lastname="Kumar", strategy=manish_strategy),
     TraderProfile(name="Mukesh", lastname="Negi", strategy=mukesh_strategy),
     TraderProfile(name="Ashish", lastname="Bhutani", strategy=ashish_strategy, model_name="gpt-5.5"),
-    TraderProfile(name="Manoj", lastname="Yadava", strategy=mukesh_strategy), 
+    TraderProfile(name="Manoj", lastname="Yadava", strategy=manoj_strategy),
+    TraderProfile(name="Gaurav", lastname="Jain", strategy=gaurav_strategy),
 ]
 
 

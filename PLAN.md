@@ -45,7 +45,7 @@ and untouched.
 
 1. Act as Role 1. Read `docs/requirements.md`.
 2. Produce a complete design: modules, classes, function/method signatures (no
-   implementations) needed to satisfy every requirement.
+   implementations) needed to satisfy every requirement. Include mermaid diagrams and design patterns selected wherever its required.
 3. Include the Gradio 6 API guidance and error-handling contract as required by
    Role 1's responsibilities in AGENTS.md.
 4. Write the result to `docs/design.md`.
