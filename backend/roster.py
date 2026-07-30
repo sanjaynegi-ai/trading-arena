@@ -76,7 +76,7 @@ TRADER_PROFILES: list[TraderProfile] = [
     TraderProfile(name="Mukesh", lastname="Negi", strategy=mukesh_strategy),
     TraderProfile(name="Ashish", lastname="Bhutani", strategy=ashish_strategy, model_name="gpt-5.5"),
     TraderProfile(name="Manoj", lastname="Yadava", strategy=manoj_strategy),
-    TraderProfile(name="Gaurav", lastname="Jain", strategy=gaurav_strategy, model_name="gpt-5.5"),
+    TraderProfile(name="Gaurav", lastname="Jain", strategy=gaurav_strategy),
 ]
 
 
